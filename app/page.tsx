@@ -33,7 +33,7 @@ export default function Home() {
             ⚙️ 프롬프트 관리
           </a>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">GPT 슬라이드 생성기</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">AI PPT 슬라이드 생성기</h1>
         <p className="text-base md:text-lg text-gray-600">텍스트를 입력하면 PPT 슬라이드 구성을 자동으로 생성해드립니다</p>
       </div>
       

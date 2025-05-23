@@ -2,8 +2,8 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'GPT 슬라이드 생성기',
-  description: 'GPT 기반 PPT 슬라이드 구성 지원 시스템',
+  title: 'AI PPT 슬라이드 생성기',
+  description: 'GPT를 활용한 자동 PPT 슬라이드 생성 시스템',
 }
 
 export default function RootLayout({
