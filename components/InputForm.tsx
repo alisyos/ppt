@@ -33,11 +33,15 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
   const supportedFileTypes = {
     'text/plain': true,
     'application/pdf': true,
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+    'application/msword': true,
+    'application/haansoftdocx': true, // 한글 오피스
+    'application/vnd.hancom.hwp': true, // 한글 파일
+    'application/x-hwp': true // 한글 파일 (다른 MIME 타입)
   }
   
   // 지원하는 파일 확장자
-  const supportedExtensions = ['.txt', '.docx', '.pdf']
+  const supportedExtensions = ['.txt', '.docx', '.pdf', '.doc', '.hwp']
   
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -91,7 +95,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
         setUploadedFileInfo(null) // 새 파일 선택 시 이전 업로드 정보 초기화
         setError(null)
       } else {
-        setError('지원하지 않는 파일 형식입니다. txt, docx, pdf 파일만 지원합니다.')
+        setError('지원하지 않는 파일 형식입니다. txt, docx, pdf, doc, hwp 파일만 지원합니다.')
       }
     }
   }
@@ -128,7 +132,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
         setUploadedFileInfo(null) // 새 파일 드롭 시 이전 업로드 정보 초기화
         setError(null)
       } else {
-        setError('지원하지 않는 파일 형식입니다. txt, docx, pdf 파일만 지원합니다.')
+        setError('지원하지 않는 파일 형식입니다. txt, docx, pdf, doc, hwp 파일만 지원합니다.')
       }
     }
   }
@@ -250,7 +254,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
               <input
                 id="fileInput"
                 type="file"
-                accept=".txt,.docx,.pdf"
+                accept=".txt,.docx,.pdf,.doc,.hwp"
                 className="hidden"
                 onChange={handleFileSelect}
               />
@@ -267,7 +271,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
               ) : (
                 <div>
                   <p className="text-gray-600">{isDragActive ? '여기에 파일을 놓으세요' : '파일을 끌어다 놓거나 클릭하여 업로드하세요'}</p>
-                  <p className="text-sm text-gray-500 mt-1">텍스트(.txt), 워드(.docx), PDF(.pdf) 파일 지원</p>
+                  <p className="text-sm text-gray-500 mt-1">텍스트(.txt), 워드(.docx), PDF(.pdf), 한글(.doc), 한글 파일(.hwp) 파일 지원</p>
                 </div>
               )}
             </div>

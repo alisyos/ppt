@@ -128,6 +128,27 @@ npm run dev
 - OpenAI API 키는 환경 변수로 안전하게 관리
 - 관리자 페이지는 별도 인증 시스템 추가 가능
 
+## 🚨 문제 해결 (Troubleshooting)
+
+### 파일 업로드 문제
+- **배포 환경에서 파일 업로드 실패**: 서버리스 환경(Vercel 등)에서는 `/tmp` 디렉토리만 사용 가능
+- **한글 오피스 파일 지원**: `application/haansoftdocx` MIME 타입 지원 추가됨
+- **파일 크기 제한**: 최대 10MB 파일만 업로드 가능
+- **지원 파일 형식**: `.txt`, `.docx`, `.pdf`, `.doc`, `.hwp`
+
+### 배포 환경 최적화
+```bash
+# 환경 변수 설정 (Vercel 예시)
+OPENAI_API_KEY=your_openai_api_key_here
+NODE_ENV=production
+VERCEL=1
+```
+
+### 일반적인 오류 해결
+- **500 에러**: OpenAI API 키 확인 및 파일 크기 검증
+- **타임아웃**: 파일 크기를 줄이고 다시 시도
+- **파일 처리 오류**: 지원 파일 형식 확인
+
 ## 📈 향후 개선 계획
 
 - [ ] 사용자 인증 시스템

@@ -6,8 +6,9 @@ import { existsSync } from 'fs'
 import { ChatCompletionMessageParam } from 'openai/resources'
 import { createReadStream } from 'fs'
 
-// 업로드 디렉토리 경로
-const UPLOAD_DIR = join(process.cwd(), 'uploads')
+// 업로드 디렉토리 경로 - 배포 환경 고려
+const isVercel = process.env.VERCEL === '1'
+const UPLOAD_DIR = isVercel ? '/tmp/uploads' : join(process.cwd(), 'uploads')
 const PROMPTS_FILE = join(process.cwd(), 'config', 'prompts.json')
 
 // 테스트용 더미 데이터를 사용 (OpenAI API 키가 없는 경우를 위함)
@@ -106,17 +107,26 @@ export async function POST(request: NextRequest) {
             // 텍스트 파일인 경우 직접 읽기
             extractedText = await readFile(filePath, 'utf-8')
             console.log('텍스트 파일 추출 완료:', { textLength: extractedText.length })
-          } else if (fileExt === 'docx') {
-            // DOCX 파일 처리
+          } else if (fileExt === 'docx' || fileExt === 'doc') {
+            // DOCX/DOC 파일 처리 (한글 오피스 포함)
             try {
               const mammoth = await import('mammoth')
               const result = await mammoth.extractRawText({ path: filePath })
               extractedText = result.value
-              console.log('DOCX 파일 추출 완료:', { textLength: extractedText.length })
+              console.log('DOCX/DOC 파일 추출 완료:', { textLength: extractedText.length })
             } catch (docxError) {
-              console.error('DOCX 처리 오류:', docxError)
-              extractedText = `DOCX 파일을 읽을 수 없습니다: ${fileName}`
+              console.error('DOCX/DOC 처리 오류:', docxError)
+              // 한글 오피스 파일인 경우 대체 메시지
+              if (fileName?.includes('한글') || fileName?.includes('hangul')) {
+                extractedText = `한글 오피스 문서 파일: ${fileName}\n\n이 파일의 내용을 기반으로 프레젠테이션 슬라이드를 생성해주세요. 한글 오피스 파일 형식으로 인해 텍스트를 직접 추출할 수 없어 파일명을 기반으로 합니다.`
+              } else {
+                extractedText = `DOCX/DOC 파일을 읽을 수 없습니다: ${fileName}`
+              }
             }
+          } else if (fileExt === 'hwp') {
+            // 한글 파일 처리 (현재는 지원하지 않으므로 안내 메시지)
+            extractedText = `한글 파일: ${fileName}\n\n한글 파일(.hwp) 형식은 현재 텍스트 추출을 지원하지 않습니다. 파일명을 기반으로 프레젠테이션 슬라이드를 생성해주세요.`
+            console.log('한글 파일 안내 메시지 생성')
           } else if (fileExt === 'pdf') {
             // PDF 파일 처리
             try {
@@ -131,13 +141,18 @@ export async function POST(request: NextRequest) {
             }
           } else {
             // 기타 파일은 바이너리로 읽고 일부 정보만 포함
-            const fileData = await readFile(filePath)
-            extractedText = `파일명: ${fileName}\n파일 크기: ${Math.round(fileData.length / 1024)}KB\n파일 형식: ${fileExt.toUpperCase()}\n\n이 파일의 내용을 기반으로 슬라이드를 생성해주세요.`
-            console.log('기타 파일 정보 생성 완료')
+            try {
+              const fileData = await readFile(filePath)
+              extractedText = `파일명: ${fileName}\n파일 크기: ${Math.round(fileData.length / 1024)}KB\n파일 형식: ${fileExt.toUpperCase()}\n\n이 파일의 내용을 기반으로 슬라이드를 생성해주세요.`
+              console.log('기타 파일 정보 생성 완료')
+            } catch (readError) {
+              console.error('파일 읽기 오류:', readError)
+              extractedText = `파일명: ${fileName}\n파일 형식: ${fileExt.toUpperCase()}\n\n파일을 읽을 수 없어 파일명을 기반으로 슬라이드를 생성해주세요.`
+            }
           }
           
           // 추출된 텍스트가 너무 긴 경우 일부만 사용 (토큰 제한 고려)
-          const maxTextLength = 10000 // 약 40,000 토큰 제한을 고려하여 텍스트 길이 제한
+          const maxTextLength = 8000 // 배포 환경을 고려하여 조금 더 보수적으로 설정
           if (extractedText.length > maxTextLength) {
             extractedText = extractedText.substring(0, maxTextLength) + '\n\n... (텍스트가 길어서 일부만 포함됨)'
             console.log('텍스트 길이 제한 적용:', { originalLength: extractedText.length, truncatedLength: maxTextLength })
@@ -163,19 +178,24 @@ export async function POST(request: NextRequest) {
           })
           
           console.log('OpenAI API 요청 준비 (파일 텍스트 포함):', { 
-            model: 'gpt-4.1',
+            model: 'gpt-4',
             promptLength: filePrompt.length,
             extractedTextLength: extractedText.length
           })
           
-          // OpenAI API 호출 (Chat Completions API 사용)
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4.1",
-            messages: [systemMessage, { role: "user", content: filePrompt }],
-            temperature: 0.7,
-            max_tokens: 2500,
-            response_format: { type: "json_object" }
-          })
+          // OpenAI API 호출 (Chat Completions API 사용) - 모델명 수정
+          const completion = await Promise.race([
+            openai.chat.completions.create({
+              model: "gpt-4",
+              messages: [systemMessage, { role: "user", content: filePrompt }],
+              temperature: 0.7,
+              max_tokens: 2500,
+              response_format: { type: "json_object" }
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('OpenAI API 타임아웃')), 25000)
+            )
+          ]) as any
           
           const responseText = completion.choices[0].message.content
           
@@ -192,21 +212,43 @@ export async function POST(request: NextRequest) {
           }
           
           // JSON 파싱
-          const slideData = JSON.parse(responseText) as SlideData
-          console.log('슬라이드 생성 완료 (파일 기반):', {
-            title: slideData.title,
-            slideCount: slideData.slides.length
-          })
-          
-          return NextResponse.json({
-            success: true,
-            data: slideData
-          })
+          try {
+            const slideData = JSON.parse(responseText) as SlideData
+            console.log('슬라이드 생성 완료 (파일 기반):', {
+              title: slideData.title,
+              slideCount: slideData.slides.length
+            })
+            
+            return NextResponse.json({
+              success: true,
+              data: slideData
+            })
+          } catch (jsonError) {
+            console.error('JSON 파싱 오류:', jsonError)
+            return NextResponse.json(
+              { success: false, error: 'AI 응답을 처리할 수 없습니다. 다시 시도해주세요.' },
+              { status: 500 }
+            )
+          }
           
         } catch (fileError: any) {
           console.error('파일 처리 오류:', fileError)
+          
+          // 특정 오류에 대한 구체적인 메시지
+          let errorMessage = '파일을 처리할 수 없습니다'
+          
+          if (fileError.message?.includes('타임아웃') || fileError.message?.includes('timeout')) {
+            errorMessage = '파일 처리 시간이 초과되었습니다. 더 작은 파일로 시도해보세요.'
+          } else if (fileError.message?.includes('ENOENT')) {
+            errorMessage = '업로드된 파일을 찾을 수 없습니다. 파일을 다시 업로드해주세요.'
+          } else if (fileError.message?.includes('insufficient_quota')) {
+            errorMessage = 'AI 서비스 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.'
+          } else if (fileError.message) {
+            errorMessage = `파일 처리 오류: ${fileError.message}`
+          }
+          
           return NextResponse.json(
-            { success: false, error: '파일을 처리할 수 없습니다: ' + (fileError.message || '알 수 없는 오류') },
+            { success: false, error: errorMessage },
             { status: 500 }
           )
         }
