@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
           })
           
           console.log('OpenAI API 요청 준비 (파일 텍스트 포함):', { 
-            model: 'gpt-4',
+            model: 'gpt-4.1',
             promptLength: filePrompt.length,
             extractedTextLength: extractedText.length
           })
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
           // OpenAI API 호출 (Chat Completions API 사용) - 모델명 수정
           const completion = await Promise.race([
             openai.chat.completions.create({
-              model: "gpt-4",
+              model: "gpt-4.1",
               messages: [systemMessage, { role: "user", content: filePrompt }],
               temperature: 0.7,
               max_tokens: 2500,
