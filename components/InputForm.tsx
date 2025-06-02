@@ -18,7 +18,8 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
     slidesCount: 5,
     language: 'ko',
     tone: 'professional',
-    inputType: 'text'
+    inputType: 'text',
+    includeScript: false
   })
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -64,7 +65,8 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
       slidesCount: 5,
       language: 'ko',
       tone: 'professional',
-      inputType: 'text'
+      inputType: 'text',
+      includeScript: false
     })
     setSlideData(null)
     setFile(null)
@@ -347,6 +349,25 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
                 <option value="casual">친근한</option>
                 <option value="professional">전문적</option>
               </select>
+            </div>
+            
+            <div className="lg:col-span-2">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="includeScript"
+                  name="includeScript"
+                  checked={formData.includeScript}
+                  onChange={(e) => setFormData(prev => ({ ...prev, includeScript: e.target.checked }))}
+                  className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                />
+                <label htmlFor="includeScript" className="text-sm font-medium text-gray-700">
+                  발표 스크립트 생성 포함
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                각 슬라이드별 발표용 스크립트를 함께 생성합니다
+              </p>
             </div>
           </div>
           

@@ -1,7 +1,10 @@
-export interface SlideItem {
+export interface Slide {
   id: string;
-  title: string;
-  content: string[];
+  mainCopy: string;
+  subCopy: string;
+  body: string[];
+  visualSuggestion: string[];
+  script?: string;
   type: 'title' | 'points' | 'comparison' | 'timeline' | 'conclusion';
 }
 
@@ -9,7 +12,7 @@ export interface SlideData {
   title: string;
   purpose: string;
   audience: string;
-  slides: SlideItem[];
+  slides: Slide[];
 }
 
 export interface InputFormData {
@@ -20,6 +23,7 @@ export interface InputFormData {
   language: 'ko' | 'en';
   tone: 'formal' | 'casual' | 'professional';
   inputType: 'text' | 'file';
+  includeScript: boolean;
 }
 
 export interface ApiResponse {

@@ -173,8 +173,11 @@ export async function POST(request: NextRequest) {
             purpose,
             audience,
             slidesCount: slidesCount.toString(),
-            language: language === 'ko' ? '한국어' : '영어',
-            tone: tone === 'formal' ? '격식체' : tone === 'casual' ? '친근한' : '전문적'
+            tone: tone === 'formal' ? '격식체' : tone === 'casual' ? '친근한' : '전문적',
+            includeScript: body.includeScript ? '예' : '아니오',
+            scriptInstruction: body.includeScript 
+              ? '\n- script 필드는 각 슬라이드별 발표용 스크립트를 3-7문장으로 자연스럽게 작성 (청중과의 소통, 전환 문구 포함)'
+              : ''
           })
           
           console.log('OpenAI API 요청 준비 (파일 텍스트 포함):', { 
@@ -193,7 +196,7 @@ export async function POST(request: NextRequest) {
               response_format: { type: "json_object" }
             }),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('OpenAI API 타임아웃')), 25000)
+              setTimeout(() => reject(new Error('OpenAI API 타임아웃')), 45000)
             )
           ]) as any
           
@@ -270,8 +273,11 @@ export async function POST(request: NextRequest) {
         purpose,
         audience,
         slidesCount: slidesCount.toString(),
-        language: language === 'ko' ? '한국어' : '영어',
-        tone: tone === 'formal' ? '격식체' : tone === 'casual' ? '친근한' : '전문적'
+        tone: tone === 'formal' ? '격식체' : tone === 'casual' ? '친근한' : '전문적',
+        includeScript: body.includeScript ? '예' : '아니오',
+        scriptInstruction: body.includeScript 
+          ? '\n- script 필드는 각 슬라이드별 발표용 스크립트를 3-7문장으로 자연스럽게 작성 (청중과의 소통, 전환 문구 포함)'
+          : ''
       })
       
       console.log('OpenAI API 요청 준비 (텍스트):', { 
@@ -287,13 +293,18 @@ export async function POST(request: NextRequest) {
       }
       
       // OpenAI API 호출 (텍스트 입력 사용)
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4.1", // GPT 모델 지정 (최신 모델 사용)
-        messages: [systemMessage, userMessage],
-        temperature: 0.7,
-        max_tokens: 2500,
-        response_format: { type: "json_object" }
-      })
+      const completion = await Promise.race([
+        openai.chat.completions.create({
+          model: "gpt-4.1", // GPT 모델 지정 (최신 모델 사용)
+          messages: [systemMessage, userMessage],
+          temperature: 0.7,
+          max_tokens: 2500,
+          response_format: { type: "json_object" }
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('OpenAI API 타임아웃')), 45000)
+        )
+      ]) as any
       
       const responseText = completion.choices[0].message.content
       
@@ -354,55 +365,77 @@ function generateDummySlideData(body: InputFormData & { filePath?: string, fileN
   const input = body.inputText || body.fileName || '입력 내용';
   
   return {
-    title: `${body.purpose}: ${input.substring(0, 20)}...`,
-    purpose: body.purpose,
-    audience: body.audience,
+    title: `${body.purpose} 프레젠테이션`,
+    purpose: `${body.purpose} → 효과적 전달`,
+    audience: `${body.audience} 대상 맞춤 발표`,
     slides: [
       {
         id: 'slide-1',
-        title: '소개',
-        content: [
-          '이 발표는 사용자가 입력한 내용을 바탕으로 생성되었습니다',
-          `발표 목적: ${body.purpose}`,
-          `대상 청중: ${body.audience}`,
-          `총 슬라이드 수: ${body.slidesCount}개`
+        mainCopy: '프레젠테이션 개요',
+        subCopy: '사용자 입력 기반 자동 생성 슬라이드',
+        body: [
+          '발표 목적: ' + body.purpose,
+          '대상 청중: ' + body.audience,
+          '총 슬라이드 수: ' + body.slidesCount + '개',
+          '자동 생성 시스템 활용'
         ],
+        visualSuggestion: ['아이콘(프레젠테이션 화면)', '표(행: 항목, 열: 내용)'],
+        script: body.includeScript ? '안녕하세요. 오늘 발표를 시작하겠습니다. 이번 프레젠테이션은 여러분이 입력해주신 내용을 바탕으로 자동 생성된 슬라이드입니다. 함께 살펴보시죠.' : undefined,
         type: 'title'
       },
       {
         id: 'slide-2',
-        title: '주요 내용',
-        content: [
-          '입력하신 텍스트가 여러 슬라이드로 자동 변환됩니다',
-          '각 슬라이드는 목적에 맞게 최적화됩니다',
-          '스타일과 톤은 설정에 따라 자동 조정됩니다'
+        mainCopy: '주요 내용 분석',
+        subCopy: '입력 텍스트 → 구조화된 슬라이드 변환',
+        body: [
+          '텍스트 자동 분석 → 슬라이드 변환',
+          '목적별 최적화 → 맞춤형 구성',
+          '스타일 자동 조정 → 톤 반영',
+          '시각적 제안 → 효과적 프레젠테이션'
         ],
+        visualSuggestion: ['그래프(막대: X=단계, Y=효율성)', '이미지(AI 분석 과정을 보여주는 플로우차트와 데이터 변환 과정)'],
+        script: body.includeScript ? '이제 주요 내용을 살펴보겠습니다. 우리 시스템은 입력된 텍스트를 분석하여 자동으로 슬라이드를 생성합니다. 각 슬라이드는 발표 목적과 청중에 맞게 최적화되어 제공됩니다.' : undefined,
         type: 'points'
       },
       {
         id: 'slide-3',
-        title: body.fileName ? '파일 입력' : '텍스트 미리보기',
-        content: body.fileName 
+        mainCopy: body.fileName ? '파일 기반 분석' : '텍스트 내용 미리보기',
+        subCopy: body.fileName 
+          ? '업로드 파일 → 내용 분석 → 슬라이드 구성'
+          : '입력 텍스트 → 핵심 요약 → 구조화',
+        body: body.fileName 
           ? [
-              `파일명: ${body.fileName}`,
-              '파일 내용이 분석되어 슬라이드로 변환됩니다',
-              '더 많은 내용이 포함된 파일일수록 상세한 슬라이드가 생성됩니다'
+              '파일명: ' + body.fileName,
+              '내용 분석 → 슬라이드 변환',
+              '상세 파일 → 풍부한 슬라이드',
+              '다양한 형식 지원: TXT, DOCX, PDF'
             ]
           : [
-              body.inputText?.substring(0, 50) + '...',
-              '더 많은 텍스트가 입력되면 더 상세한 슬라이드가 생성됩니다',
-              '실제 환경에서는 OpenAI API를 통해 생성됩니다'
+              '입력 내용: ' + (body.inputText?.substring(0, 30) + '...' || '텍스트'),
+              '상세 텍스트 → 정교한 슬라이드',
+              'OpenAI API → 고품질 생성',
+              '구체적 내용 → 전문적 결과'
             ],
+        visualSuggestion: body.fileName 
+          ? ['아이콘(파일 업로드)', '표(행: 파일 정보, 열: 상세 내용)']
+          : ['그래프(원형: 텍스트 분석 비율)', '이미지(텍스트 입력창과 분석 결과를 보여주는 인터페이스 화면)'],
+        script: body.includeScript ? (body.fileName 
+          ? '업로드해주신 파일을 분석한 결과입니다. 파일의 내용이 체계적으로 분석되어 의미있는 슬라이드로 구성되었습니다. 파일 기반 분석의 장점을 확인해보세요.'
+          : '입력해주신 텍스트의 핵심 내용입니다. 더 상세한 내용을 입력하실수록 더욱 풍부하고 전문적인 슬라이드가 생성됩니다.') : undefined,
         type: 'points'
       },
       {
         id: 'slide-4',
-        title: '결론',
-        content: [
-          '현재 테스트 모드로 실행 중입니다',
-          '실제 서비스에서는 더 상세하고 맞춤화된 슬라이드가 생성됩니다',
-          '감사합니다'
+        mainCopy: '결론 및 다음 단계',
+        subCopy: '테스트 완료 → 실제 서비스 안내',
+        body: [
+          '현재 상태: 테스트 모드 실행',
+          '실제 서비스: 맞춤화된 고품질 슬라이드',
+          '기술 기반: OpenAI GPT-4.1 활용',
+          '결과: 전문적 콘텐츠 제공'
         ],
+        visualSuggestion: ['아이콘(체크 완료 표시)', '표(행: 서비스 특징, 열: 장점)'],
+        script: body.includeScript ? '이상으로 테스트 프레젠테이션을 마치겠습니다. 실제 서비스에서는 더욱 정교하고 전문적인 슬라이드와 스크립트가 제공됩니다. 질문이 있으시면 언제든 말씀해주세요. 감사합니다.' : undefined,
         type: 'conclusion'
       }
     ]

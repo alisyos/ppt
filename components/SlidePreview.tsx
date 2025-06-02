@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { SlideData } from '../types/slides'
+import PptxGenJS from 'pptxgenjs'
 
 // SlidePreview 컴포넌트의 props 타입
 interface SlidePreviewProps {
@@ -10,205 +11,264 @@ interface SlidePreviewProps {
 
 export default function SlidePreview({ slideData }: SlidePreviewProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [pptxgenLoaded, setPptxgenLoaded] = useState(false)
-  const [copyMessage, setCopyMessage] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
 
-  // pptxgenjs 라이브러리를 동적으로 로드
-  useEffect(() => {
-    import('pptxgenjs').then((module) => {
-      setPptxgenLoaded(true)
-      console.log('pptxgenjs 로드 완료')
-    }).catch(err => {
-      console.error('pptxgenjs 로드 실패:', err)
-    })
-  }, [])
-
-  const nextSlide = () => {
-    setCurrentSlide(current => 
-      current < slideData.slides.length - 1 ? current + 1 : current
-    )
+  const handlePrevSlide = () => {
+    setCurrentSlide(prev => Math.max(0, prev - 1))
   }
 
-  const prevSlide = () => {
-    setCurrentSlide(current => 
-      current > 0 ? current - 1 : current
-    )
+  const handleNextSlide = () => {
+    setCurrentSlide(prev => Math.min(slideData.slides.length - 1, prev + 1))
   }
 
-  const copyToClipboard = async () => {
+  const handleExportPPTX = async () => {
+    setIsExporting(true)
     try {
-      let textContent = `${slideData.title}\n\n`
+      const pptx = new PptxGenJS()
       
       slideData.slides.forEach((slide, index) => {
-        textContent += `슬라이드 ${index + 1}: ${slide.title}\n`
-        slide.content.forEach(item => {
-          const isSectionTitle = item.trim().endsWith(':')
-          if (isSectionTitle) {
-            textContent += `${item}\n`
-          } else {
-            textContent += `• ${item}\n`
-          }
-        })
-        textContent += '\n'
-      })
-      
-      await navigator.clipboard.writeText(textContent)
-      setCopyMessage('텍스트가 클립보드에 복사되었습니다!')
-      
-      // 3초 후 메시지 제거
-      setTimeout(() => {
-        setCopyMessage('')
-      }, 3000)
-    } catch (error) {
-      console.error('클립보드 복사 오류:', error)
-      setCopyMessage('복사에 실패했습니다. 다시 시도해주세요.')
-      setTimeout(() => {
-        setCopyMessage('')
-      }, 3000)
-    }
-  }
-
-  const downloadPPTX = async () => {
-    try {
-      if (!pptxgenLoaded) {
-        alert('PPTX 생성 모듈을 로드 중입니다. 잠시 후 다시 시도해주세요.')
-        return
-      }
-      
-      const pptxgenModule = await import('pptxgenjs')
-      const pptxgen = pptxgenModule.default
-      
-      const pptx = new pptxgen()
-      
-      slideData.slides.forEach(slide => {
-        const newSlide = pptx.addSlide()
+        const pptxSlide = pptx.addSlide()
         
-        // 제목
-        newSlide.addText(slide.title, { 
-          x: 0.5, 
-          y: 0.5, 
+        // 메인 카피 (제목)
+        pptxSlide.addText(slide.mainCopy, {
+          x: 0.5,
+          y: 0.5,
+          w: 9,
+          h: 1,
           fontSize: 24,
           bold: true,
           color: '363636'
         })
         
-        // 내용
-        slide.content.forEach((item, i) => {
-          const isSectionTitle = item.trim().endsWith(':')
-          if (isSectionTitle) {
-            newSlide.addText(item, { 
-              x: 0.5, 
-              y: 1.2 + (i * 0.3), 
-              fontSize: 16,
-              bold: true,
-              color: '363636'
-            })
-          } else {
-            newSlide.addText(`• ${item}`, { 
-              x: 0.7, 
-              y: 1.2 + (i * 0.3), 
-              fontSize: 14,
-              color: '484848'
-            })
-          }
-        })
+        // 서브 카피
+        if (slide.subCopy) {
+          pptxSlide.addText(slide.subCopy, {
+            x: 0.5,
+            y: 1.5,
+            w: 9,
+            h: 0.8,
+            fontSize: 16,
+            color: '666666'
+          })
+        }
+        
+        // 본문 내용
+        if (slide.body && slide.body.length > 0) {
+          const bodyText = slide.body.map((item, idx) => `• ${item}`).join('\n')
+          pptxSlide.addText(bodyText, {
+            x: 0.5,
+            y: slide.subCopy ? 2.5 : 2,
+            w: 9,
+            h: 3,
+            fontSize: 14,
+            color: '333333',
+            valign: 'top'
+          })
+        }
+        
+        // 시각적 제안 (본문 하단에 명확하게 구분하여 추가)
+        if (slide.visualSuggestion && slide.visualSuggestion.length > 0) {
+          const visualText = `💡 시각적 제안:\n${slide.visualSuggestion.map(item => `• ${item}`).join('\n')}`
+          pptxSlide.addText(visualText, {
+            x: 0.5,
+            y: 5.8,
+            w: 9,
+            h: 2,
+            fontSize: 12,
+            color: '0066CC',
+            bold: true,
+            valign: 'top',
+            fill: { color: 'F0F8FF' }
+          })
+        }
+        
+        // 발표 스크립트 (노트 섹션에 추가)
+        if (slide.script) {
+          pptxSlide.addNotes(slide.script)
+        }
       })
       
-      pptx.writeFile({ fileName: '슬라이드.pptx' })
+      await pptx.writeFile({ fileName: `${slideData.title || 'presentation'}.pptx` })
     } catch (error) {
-      console.error('PPTX 생성 오류:', error)
-      alert('PPTX 생성 중 오류가 발생했습니다.')
+      console.error('PPTX 내보내기 오류:', error)
+      alert('PPTX 파일 생성 중 오류가 발생했습니다.')
+    } finally {
+      setIsExporting(false)
     }
   }
 
-  const getSlideContentClass = (type: string) => {
-    switch(type) {
-      case 'title':
-        return 'bg-primary/10 text-center'
-      case 'conclusion':
-        return 'bg-secondary/10'
-      default:
-        return 'bg-white'
+  const handleExportScript = () => {
+    // 스크립트가 있는 슬라이드들만 필터링
+    const slidesWithScript = slideData.slides.filter(slide => slide.script)
+    
+    if (slidesWithScript.length === 0) {
+      alert('발표 스크립트가 없습니다.')
+      return
     }
+
+    // 스크립트 텍스트 생성
+    let scriptContent = `${slideData.title}\n발표 스크립트\n\n`
+    scriptContent += `발표 목적: ${slideData.purpose}\n`
+    scriptContent += `대상 청중: ${slideData.audience}\n`
+    scriptContent += `생성일: ${new Date().toLocaleDateString('ko-KR')}\n\n`
+    scriptContent += '='.repeat(50) + '\n\n'
+
+    slidesWithScript.forEach((slide, index) => {
+      const slideNumber = slideData.slides.indexOf(slide) + 1
+      scriptContent += `[슬라이드 ${slideNumber}] ${slide.mainCopy}\n`
+      scriptContent += `${'-'.repeat(30)}\n`
+      scriptContent += `${slide.script}\n\n`
+    })
+
+    // 파일 다운로드
+    const blob = new Blob([scriptContent], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${slideData.title || 'presentation'}_script.txt`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
+
+  // 스크립트가 있는 슬라이드가 하나라도 있는지 확인
+  const hasAnyScript = slideData.slides.some(slide => slide.script)
+
+  const currentSlideData = slideData.slides[currentSlide]
 
   return (
-    <div className="bg-white shadow-xl rounded-xl overflow-hidden flex flex-col h-full">
-      <div className="bg-gray-100 p-3 border-b flex justify-between items-center">
-        <h2 className="text-lg font-bold">생성된 슬라이드</h2>
-        <div className="flex items-center space-x-1 text-sm">
-          <span className="font-medium">{currentSlide + 1}</span>
-          <span>/ {slideData.slides.length}</span>
+    <div className="bg-white shadow-xl rounded-xl p-6 md:p-8">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">{slideData.title}</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {slideData.purpose} • {slideData.audience} • {slideData.slides.length}개 슬라이드
+          </p>
         </div>
-      </div>
-      
-      <div className="p-4 flex-grow overflow-auto">
-        <div className="border rounded-lg overflow-hidden h-full">
-          {/* 슬라이드 미리보기 */}
-          <div className={`p-6 ${getSlideContentClass(slideData.slides[currentSlide].type)} h-full flex flex-col`}>
-            <h3 className="text-xl font-bold mb-4">
-              {slideData.slides[currentSlide].title}
-            </h3>
-            <ul className="space-y-2 flex-grow">
-              {slideData.slides[currentSlide].content.map((item, i) => {
-                // 섹션 제목인지 확인 (콜론으로 끝나는 경우)
-                const isSectionTitle = item.trim().endsWith(':')
-                
-                if (isSectionTitle) {
-                  return (
-                    <li key={i} className="font-semibold text-gray-800 mt-3 first:mt-0">
-                      {item}
-                    </li>
-                  )
-                } else {
-                  return (
-                    <li key={i} className="flex items-start ml-4">
-                      <span className="mr-2 flex-shrink-0">•</span>
-                      <span>{item}</span>
-                    </li>
-                  )
-                }
-              })}
-            </ul>
-          </div>
-        </div>
-      </div>
-      
-      <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
         <div className="flex space-x-2">
-          <button
-            onClick={prevSlide}
-            disabled={currentSlide === 0}
-            className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50 text-sm"
-          >
-            이전
-          </button>
-          <button
-            onClick={nextSlide}
-            disabled={currentSlide === slideData.slides.length - 1}
-            className="px-3 py-1.5 bg-gray-200 text-gray-800 rounded-lg disabled:opacity-50 text-sm"
-          >
-            다음
-          </button>
-        </div>
-        
-        <div className="flex space-x-2 items-center">
-          {copyMessage && (
-            <span className="text-sm text-green-600 mr-2">{copyMessage}</span>
+          {hasAnyScript && (
+            <button
+              onClick={handleExportScript}
+              className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm"
+            >
+              📝 스크립트 다운로드
+            </button>
           )}
           <button
-            onClick={copyToClipboard}
-            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition"
+            onClick={handleExportPPTX}
+            disabled={isExporting}
+            className={`px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm ${
+              isExporting ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-            텍스트 복사
-          </button>
-          <button
-            onClick={downloadPPTX}
-            className="px-3 py-1.5 bg-secondary text-white rounded-lg text-sm hover:bg-secondary/90 transition"
-          >
-            PPTX 저장
+            {isExporting ? '생성 중...' : '📄 PPTX 내보내기'}
           </button>
         </div>
+      </div>
+
+      {/* 슬라이드 내용 */}
+      <div className="bg-gray-50 rounded-lg p-6 min-h-[400px] mb-6">
+        <div className="bg-white rounded-lg p-6 h-full shadow-sm">
+          {/* 메인 카피 */}
+          <h3 className="text-xl font-bold text-gray-800 mb-3">
+            {currentSlideData.mainCopy}
+          </h3>
+          
+          {/* 서브 카피 */}
+          {currentSlideData.subCopy && (
+            <p className="text-gray-600 mb-4 text-sm">
+              {currentSlideData.subCopy}
+            </p>
+          )}
+          
+          {/* 본문 내용 */}
+          {currentSlideData.body && currentSlideData.body.length > 0 && (
+            <div className="space-y-2 mb-6">
+              {currentSlideData.body.map((item, index) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <span className="text-primary mt-1">•</span>
+                  <span className="text-gray-700 text-sm leading-relaxed">{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* 시각적 제안 */}
+          {currentSlideData.visualSuggestion && currentSlideData.visualSuggestion.length > 0 && (
+            <div className="border-t pt-4 mt-6">
+              <h4 className="text-xs font-medium text-gray-500 mb-2">💡 시각적 제안</h4>
+              <div className="flex flex-wrap gap-2">
+                {currentSlideData.visualSuggestion.map((suggestion, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs"
+                  >
+                    {suggestion}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 발표 스크립트 */}
+          {currentSlideData.script && (
+            <div className="border-t pt-4 mt-6">
+              <h4 className="text-xs font-medium text-gray-500 mb-2">🎤 발표 스크립트</h4>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {currentSlideData.script}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 네비게이션 */}
+      <div className="flex justify-between items-center">
+        <button
+          onClick={handlePrevSlide}
+          disabled={currentSlide === 0}
+          className={`px-4 py-2 rounded-lg transition ${
+            currentSlide === 0
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          ← 이전
+        </button>
+
+        <div className="flex space-x-2">
+          {slideData.slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition ${
+                index === currentSlide ? 'bg-primary' : 'bg-gray-300 hover:bg-gray-400'
+              }`}
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={handleNextSlide}
+          disabled={currentSlide === slideData.slides.length - 1}
+          className={`px-4 py-2 rounded-lg transition ${
+            currentSlide === slideData.slides.length - 1
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          다음 →
+        </button>
+      </div>
+
+      {/* 슬라이드 번호 */}
+      <div className="text-center mt-4">
+        <span className="text-sm text-gray-500">
+          {currentSlide + 1} / {slideData.slides.length}
+        </span>
       </div>
     </div>
   )

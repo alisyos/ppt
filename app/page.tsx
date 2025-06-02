@@ -38,13 +38,13 @@ export default function Home() {
       </div>
       
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* 좌측: 입력 영역 */}
-        <div className="lg:w-1/2">
+        {/* 좌측: 입력 영역 (2/5) */}
+        <div className="lg:w-2/5">
           <InputForm setSlideData={setSlideData} setLoading={setLoading} loading={loading} />
         </div>
         
-        {/* 우측: 결과물 영역 */}
-        <div className="lg:w-1/2">
+        {/* 우측: 결과물 영역 (3/5) */}
+        <div className="lg:w-3/5">
           {slideData ? (
             <SlidePreview slideData={slideData} />
           ) : (
