@@ -7,9 +7,10 @@ import PptxGenJS from 'pptxgenjs'
 // SlidePreview 컴포넌트의 props 타입
 interface SlidePreviewProps {
   slideData: SlideData
+  includeScript?: boolean
 }
 
-export default function SlidePreview({ slideData }: SlidePreviewProps) {
+export default function SlidePreview({ slideData, includeScript = true }: SlidePreviewProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
 
@@ -141,8 +142,8 @@ export default function SlidePreview({ slideData }: SlidePreviewProps) {
     URL.revokeObjectURL(url)
   }
 
-  // 스크립트가 있는 슬라이드가 하나라도 있는지 확인
-  const hasAnyScript = slideData.slides.some(slide => slide.script)
+  // 스크립트가 있는 슬라이드가 하나라도 있는지 확인 (includeScript가 true일 때만)
+  const hasAnyScript = includeScript && slideData.slides.some(slide => slide.script)
 
   const currentSlideData = slideData.slides[currentSlide]
 
@@ -235,7 +236,7 @@ export default function SlidePreview({ slideData }: SlidePreviewProps) {
           )}
           
           {/* 발표 스크립트 */}
-          {currentSlideData.script && (
+          {includeScript && currentSlideData.script && (
             <div className="border-t pt-4 mt-6">
               <h4 className="text-xs font-medium text-gray-500 mb-2">🎤 발표 스크립트</h4>
               <div className="bg-gray-50 rounded-lg p-3">

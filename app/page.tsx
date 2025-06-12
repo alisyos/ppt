@@ -20,6 +20,7 @@ const SlidePreview = dynamic(() => import('../components/SlidePreview'), {
 export default function Home() {
   const [slideData, setSlideData] = useState<SlideData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [includeScript, setIncludeScript] = useState(true)
   
   return (
     <main className="min-h-screen p-4 md:p-8">
@@ -40,13 +41,13 @@ export default function Home() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* 좌측: 입력 영역 (2/5) */}
         <div className="lg:w-2/5">
-          <InputForm setSlideData={setSlideData} setLoading={setLoading} loading={loading} />
+          <InputForm setSlideData={setSlideData} setLoading={setLoading} loading={loading} setIncludeScript={setIncludeScript} />
         </div>
         
         {/* 우측: 결과물 영역 (3/5) */}
         <div className="lg:w-3/5">
           {slideData ? (
-            <SlidePreview slideData={slideData} />
+            <SlidePreview slideData={slideData} includeScript={includeScript} />
           ) : (
             <div className="bg-white shadow-xl rounded-xl p-6 md:p-8 h-full flex items-center justify-center">
               <div className="text-center">

@@ -8,9 +8,10 @@ interface InputFormProps {
   setSlideData: (data: SlideData | null) => void
   setLoading: (loading: boolean) => void
   loading: boolean
+  setIncludeScript: (includeScript: boolean) => void
 }
 
-export default function InputForm({ setSlideData, setLoading, loading }: InputFormProps) {
+export default function InputForm({ setSlideData, setLoading, loading, setIncludeScript }: InputFormProps) {
   const [formData, setFormData] = useState<InputFormData>({
     inputText: '',
     purpose: '보고',
@@ -19,7 +20,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
     language: 'ko',
     tone: 'professional',
     inputType: 'text',
-    includeScript: false
+    includeScript: true
   })
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -66,7 +67,7 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
       language: 'ko',
       tone: 'professional',
       inputType: 'text',
-      includeScript: false
+      includeScript: true
     })
     setSlideData(null)
     setFile(null)
@@ -358,7 +359,11 @@ export default function InputForm({ setSlideData, setLoading, loading }: InputFo
                   id="includeScript"
                   name="includeScript"
                   checked={formData.includeScript}
-                  onChange={(e) => setFormData(prev => ({ ...prev, includeScript: e.target.checked }))}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setFormData(prev => ({ ...prev, includeScript: checked }))
+                    setIncludeScript(checked)
+                  }}
                   className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                 />
                 <label htmlFor="includeScript" className="text-sm font-medium text-gray-700">
