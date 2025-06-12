@@ -54,12 +54,21 @@ export default function SlidePreview({ slideData }: SlidePreviewProps) {
         
         // 본문 내용
         if (slide.body && slide.body.length > 0) {
-          const bodyText = slide.body.map((item, idx) => `• ${item}`).join('\n')
+          let bodyText = ''
+          slide.body.forEach((item, idx) => {
+            bodyText += `• ${item.point}\n`
+            if (item.sub && item.sub.length > 0) {
+              item.sub.forEach(subItem => {
+                bodyText += `  - ${subItem}\n`
+              })
+            }
+            if (idx < slide.body.length - 1) bodyText += '\n'
+          })
           pptxSlide.addText(bodyText, {
             x: 0.5,
             y: slide.subCopy ? 2.5 : 2,
             w: 9,
-            h: 3,
+            h: 4,
             fontSize: 14,
             color: '333333',
             valign: 'top'
@@ -142,9 +151,11 @@ export default function SlidePreview({ slideData }: SlidePreviewProps) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">{slideData.title}</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {slideData.purpose} • {slideData.audience} • {slideData.slides.length}개 슬라이드
-          </p>
+          <div className="text-sm text-gray-600 mt-2 space-y-1">
+            <div>• 목적: {slideData.purpose}</div>
+            <div>• 대상: {slideData.audience}</div>
+            <div>• 슬라이드수: {slideData.slides.length}개</div>
+          </div>
         </div>
         <div className="flex space-x-2">
           {hasAnyScript && (
@@ -184,11 +195,23 @@ export default function SlidePreview({ slideData }: SlidePreviewProps) {
           
           {/* 본문 내용 */}
           {currentSlideData.body && currentSlideData.body.length > 0 && (
-            <div className="space-y-2 mb-6">
+            <div className="space-y-4 mb-6">
               {currentSlideData.body.map((item, index) => (
-                <div key={index} className="flex items-start space-x-2">
-                  <span className="text-primary mt-1">•</span>
-                  <span className="text-gray-700 text-sm leading-relaxed">{item}</span>
+                <div key={index} className="space-y-2">
+                  <div className="flex items-start space-x-2">
+                    <span className="text-primary mt-1">•</span>
+                    <span className="text-gray-700 text-sm font-medium leading-relaxed">{item.point}</span>
+                  </div>
+                  {item.sub && item.sub.length > 0 && (
+                    <div className="ml-6 space-y-1">
+                      {item.sub.map((subItem, subIndex) => (
+                        <div key={subIndex} className="flex items-start space-x-2">
+                          <span className="text-gray-400 mt-1">-</span>
+                          <span className="text-gray-600 text-xs leading-relaxed">{subItem}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

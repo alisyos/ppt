@@ -2,7 +2,10 @@ export interface Slide {
   id: string;
   mainCopy: string;
   subCopy: string;
-  body: string[];
+  body: {
+    point: string;
+    sub: string[];
+  }[];
   visualSuggestion: string[];
   script?: string;
   type: 'title' | 'points' | 'comparison' | 'timeline' | 'conclusion';
