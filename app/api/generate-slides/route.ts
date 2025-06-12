@@ -374,10 +374,22 @@ function generateDummySlideData(body: InputFormData & { filePath?: string, fileN
         mainCopy: '프레젠테이션 개요',
         subCopy: '사용자 입력 기반 자동 생성 슬라이드',
         body: [
-          '발표 목적: ' + body.purpose,
-          '대상 청중: ' + body.audience,
-          '총 슬라이드 수: ' + body.slidesCount + '개',
-          '자동 생성 시스템 활용'
+          {
+            point: '발표 목적: ' + body.purpose,
+            sub: ['효과적 전달', '명확한 메시지']
+          },
+          {
+            point: '대상 청중: ' + body.audience,
+            sub: ['맞춤형 구성', '청중 특성 반영']
+          },
+          {
+            point: '총 슬라이드 수: ' + body.slidesCount + '개',
+            sub: ['적정 분량', '집중도 유지']
+          },
+          {
+            point: '자동 생성 시스템 활용',
+            sub: ['AI 기반 분석', '고품질 결과']
+          }
         ],
         visualSuggestion: ['아이콘(프레젠테이션 화면)', '표(행: 항목, 열: 내용)'],
         script: body.includeScript ? '안녕하세요. 오늘 발표를 시작하겠습니다. 이번 프레젠테이션은 여러분이 입력해주신 내용을 바탕으로 자동 생성된 슬라이드입니다. 함께 살펴보시죠.' : undefined,
@@ -388,10 +400,22 @@ function generateDummySlideData(body: InputFormData & { filePath?: string, fileN
         mainCopy: '주요 내용 분석',
         subCopy: '입력 텍스트 → 구조화된 슬라이드 변환',
         body: [
-          '텍스트 자동 분석 → 슬라이드 변환',
-          '목적별 최적화 → 맞춤형 구성',
-          '스타일 자동 조정 → 톤 반영',
-          '시각적 제안 → 효과적 프레젠테이션'
+          {
+            point: '텍스트 자동 분석 → 슬라이드 변환',
+            sub: ['내용 구조화', '핵심 추출', '논리적 배열']
+          },
+          {
+            point: '목적별 최적화 → 맞춤형 구성',
+            sub: ['발표 목적 반영', '청중 맞춤', '효과 극대화']
+          },
+          {
+            point: '스타일 자동 조정 → 톤 반영',
+            sub: ['격식체/친근함', '전문성 유지', '일관성 보장']
+          },
+          {
+            point: '시각적 제안 → 효과적 프레젠테이션',
+            sub: ['그래프 추천', '이미지 제안', '표 구성']
+          }
         ],
         visualSuggestion: ['그래프(막대: X=단계, Y=효율성)', '이미지(AI 분석 과정을 보여주는 플로우차트와 데이터 변환 과정)'],
         script: body.includeScript ? '이제 주요 내용을 살펴보겠습니다. 우리 시스템은 입력된 텍스트를 분석하여 자동으로 슬라이드를 생성합니다. 각 슬라이드는 발표 목적과 청중에 맞게 최적화되어 제공됩니다.' : undefined,
@@ -405,16 +429,40 @@ function generateDummySlideData(body: InputFormData & { filePath?: string, fileN
           : '입력 텍스트 → 핵심 요약 → 구조화',
         body: body.fileName 
           ? [
-              '파일명: ' + body.fileName,
-              '내용 분석 → 슬라이드 변환',
-              '상세 파일 → 풍부한 슬라이드',
-              '다양한 형식 지원: TXT, DOCX, PDF'
+              {
+                point: '파일명: ' + body.fileName,
+                sub: ['업로드 완료', '내용 추출', '분석 준비']
+              },
+              {
+                point: '내용 분석 → 슬라이드 변환',
+                sub: ['구조 파악', '핵심 내용', '논리적 배치']
+              },
+              {
+                point: '상세 파일 → 풍부한 슬라이드',
+                sub: ['세부 정보', '다양한 관점', '완성도 향상']
+              },
+              {
+                point: '다양한 형식 지원: TXT, DOCX, PDF',
+                sub: ['텍스트 파일', '워드 문서', 'PDF 문서']
+              }
             ]
           : [
-              '입력 내용: ' + (body.inputText?.substring(0, 30) + '...' || '텍스트'),
-              '상세 텍스트 → 정교한 슬라이드',
-              'OpenAI API → 고품질 생성',
-              '구체적 내용 → 전문적 결과'
+              {
+                point: '입력 내용: ' + (body.inputText?.substring(0, 30) + '...' || '텍스트'),
+                sub: ['직접 입력', '즉시 분석', '빠른 처리']
+              },
+              {
+                point: '상세 텍스트 → 정교한 슬라이드',
+                sub: ['내용 풍부', '구체적 설명', '전문성 확보']
+              },
+              {
+                point: 'OpenAI API → 고품질 생성',
+                sub: ['최신 AI', '자연어 처리', '지능형 분석']
+              },
+              {
+                point: '구체적 내용 → 전문적 결과',
+                sub: ['맞춤형 구성', '품질 보장', '효과적 전달']
+              }
             ],
         visualSuggestion: body.fileName 
           ? ['아이콘(파일 업로드)', '표(행: 파일 정보, 열: 상세 내용)']
@@ -429,10 +477,22 @@ function generateDummySlideData(body: InputFormData & { filePath?: string, fileN
         mainCopy: '결론 및 다음 단계',
         subCopy: '테스트 완료 → 실제 서비스 안내',
         body: [
-          '현재 상태: 테스트 모드 실행',
-          '실제 서비스: 맞춤화된 고품질 슬라이드',
-          '기술 기반: OpenAI GPT-4.1 활용',
-          '결과: 전문적 콘텐츠 제공'
+          {
+            point: '현재 상태: 테스트 모드 실행',
+            sub: ['기능 검증', '성능 확인', '안정성 테스트']
+          },
+          {
+            point: '실제 서비스: 맞춤화된 고품질 슬라이드',
+            sub: ['개인화 서비스', '전문적 품질', '다양한 옵션']
+          },
+          {
+            point: '기술 기반: OpenAI GPT-4.1 활용',
+            sub: ['최신 AI 모델', '고도화된 분석', '신뢰성 확보']
+          },
+          {
+            point: '결과: 전문적 콘텐츠 제공',
+            sub: ['효과적 전달', '시간 절약', '품질 보장']
+          }
         ],
         visualSuggestion: ['아이콘(체크 완료 표시)', '표(행: 서비스 특징, 열: 장점)'],
         script: body.includeScript ? '이상으로 테스트 프레젠테이션을 마치겠습니다. 실제 서비스에서는 더욱 정교하고 전문적인 슬라이드와 스크립트가 제공됩니다. 질문이 있으시면 언제든 말씀해주세요. 감사합니다.' : undefined,
